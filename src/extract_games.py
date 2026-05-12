@@ -21,3 +21,35 @@ CSV_COLUMNS = [
     'result', 'eco', 'opening', 'time_control', 'termination', 'utc_date', 
     'utc_time', 'ply_count', 'moves', 'evals', 'clocks',
 ]
+
+# Extracts ELO range
+def get_elo_range(elo):
+    for label, low, high in ELO_RANGES:
+        if low <= elo < high:
+            return label
+    return None
+
+# Extracts time control category
+def get_time_control_category(time_control_str):
+    base, increment = time_control_str.split("+")
+    total = int(base) + 40 * int(increment)
+    if total < 180:   
+        return 'bullet'
+    if total < 480:   
+        return 'blitz'
+    if total < 1500:  
+        return 'rapid'
+    return 'classical'
+
+# Extracts evaluation score
+def get_evaluation_score(comment):
+    ...
+
+# Extracts clock time in seconds
+def get_clock_time(comment):
+    ...
+
+
+
+
+
