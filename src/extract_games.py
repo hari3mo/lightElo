@@ -15,7 +15,7 @@ ELO_RANGES = [
     ('[1100, 1400)', 1100, 1400),
     ('[1400, 1700)', 1400, 1700),
     ('[1700, 2000)', 1700, 2000),
-    ('[2000, 2300)', 2000, 2300),
+    ('[2000, 2300]', 2000, 2300),
     ('2300+', 2300, 10_000)
 ]
 
@@ -130,6 +130,8 @@ def filter_games(games):
         white_range, black_range = get_elo_range(white_elo), get_elo_range(black_elo)
         if white_range is None or black_range is None: # skip games with outside of ELO ranges
             continue
+        if white_range != black_range: # skip games between players in different ELO brackets
+            continue
         if range_counts[white_range] >= TARGET_PER_RANGE: # skip if already extracted 20,000 games in this ELO range
             continue
         time_control_str = headers.get('TimeControl', '')
@@ -149,11 +151,9 @@ def filter_games(games):
         base_time = int(time_control_str.split('+')[0])
         w_clock = get_clock_time(first_move.comment)
         b_clock = get_clock_time(next_move.comment)
-        if not w_clock or not b_clock:
-            continue
         if w_clock < (base_time * 0.6) or b_clock < (base_time * 0.6): # skip if 50% of base time reduced before first move ('Berserk' mode)
             continue
-
+        
         range_counts[white_range] += 1
         player_counts[white_player] = player_counts.get(white_player, 0) + 1
         player_counts[black_player] = player_counts.get(black_player, 0) + 1
