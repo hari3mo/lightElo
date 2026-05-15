@@ -1,7 +1,10 @@
+from openai import evals
 import pandas as pd
 import numpy as np
+import os
 
 GAMES_CSV_PATH = 'data/lichess_games.csv' # output from extract_games.py
+OUTPUT_PATH = 'data/lichess_features.csv' # output from create_features.py
 
 def create_player_features(game):
     evals = [float(x) if x else 0 for x in game['evals'].split(';')]
@@ -12,9 +15,9 @@ def create_player_features(game):
     clocks = np.array(2 * [start_time] + clocks) # add initial clock times for both players
     time_spent = (clocks[:-2] - clocks[2:]) + increment # turn time = clock time before move - clock time after move (+increment)
 
-    centipawns = [1000 if eval * 100 > 1000 else -1000 if eval * 100 < -1000 \
-        else eval * 100 for eval in evals] # unit measuring how strong a position/move is; more positive = better for white/more negative = better for black
-    centipawns = [20.0] + centipawns # add 20.0 centipawns to account for the implicit advantage of white moving first
+    # In create_features, replace the clipping line
+    centipawns = [0] + [1000 if eval > 10 else -1000 if eval < -10 
+                  else eval * 100 for eval in evals] # unit measuring how strong a position/move is; more positive = better for white/more negative = better for black
     diffs = np.diff(centipawns) # calculate change in centipawns after each turn (quantifies how good/bad a move was)
 
     white_cpl = np.maximum(0, -diffs[0::2]) # centipawn loss (positive values represent more loss)
@@ -52,14 +55,14 @@ def create_player_features(game):
     })
 
 def format_df(games):
-    df = pd.read_csv(games)
+    df = pd.read_csv(games).sample(140_000, random_state=42)
     features_df = df.apply(create_player_features, axis=1)
     df = pd.concat([df, features_df], axis=1)
     df = df.dropna(subset=['w_acpl', 'b_acpl'])
     df[['w_shift_move_time', 'b_shift_move_time']] = \
         df[['w_shift_move_time', 'b_shift_move_time']].fillna(0)
     
-    shared_cols = ['eco', 'ply_count', 'eval_volatility', 'category']
+    shared_cols = ['game_id', 'eco', 'ply_count', 'eval_volatility', 'category']
 
     white_cols = [
         'white_elo', 'w_acpl', 'w_blunders', 'w_mistakes', 'w_inaccuracies', 
@@ -79,14 +82,17 @@ def format_df(games):
 
     features_df = pd.concat([white_df, black_df], ignore_index=True)
     features_df = features_df.sample(frac=1, random_state=42).reset_index(drop=True) # sample rows to shuffle dataset
-    features_df.to_csv('data/lichess_features.csv', index=False)
+    features_df.to_csv(OUTPUT_PATH, index=False)
 
     return features_df
 
 def main():
-    features = format_df(GAMES_CSV_PATH)
-    features.to_csv('data/lichess_features.csv', index=False)
-    return
+    if not os.path.exists(OUTPUT_PATH):
+        features = format_df(GAMES_CSV_PATH)
+        features.to_csv(OUTPUT_PATH, index=False)
+    else:
+        features = pd.read_csv(OUTPUT_PATH)
+        print(f'{OUTPUT_PATH} already exists.')
 
 if __name__ == "__main__":
     main()
