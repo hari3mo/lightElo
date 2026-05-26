@@ -2,10 +2,12 @@ from src import extract_games
 from src import create_features
 from src import train_model
 import time
+import sys
 
 if __name__ == "__main__":
+    args = sys.argv[1:]
     start_time = time.time()
-    # Step 1: Process games and save to CSV)
+    # Step 1: Process games and save to CSV
     print('Extracting games...')
     extract_start = time.time()
     extract_games.main()
@@ -17,9 +19,12 @@ if __name__ == "__main__":
     create_features.main()
     features_end = time.time()
     print(f'Feature creation completed in {int(features_end - features_start)} seconds.')
-    # Step 3: Model training
+    # Step 3: Model training (+ optional hyperparameter tuning)
     print('Training models...')
     train_start = time.time()
+    if '--tune' in args:
+        from src import tune_model
+        tune_model.main()
     train_model.main()
     train_end = time.time()
     print(f'Model training completed in {int(train_end - train_start)} seconds.')

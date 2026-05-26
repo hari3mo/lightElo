@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 import os
 
-GAMES_CSV_PATH = 'data/lichess_games_25.csv' # output from extract_games.py
-OUTPUT_PATH = 'data/lichess_features_25.csv'
+GAMES_CSV_PATH = 'data/lichess_games.csv' # output from extract_games.py
+OUTPUT_PATH = 'data/lichess_features.csv'
 
 def create_player_features(game):
     evals = [float(x) if x else 0 for x in game['evals'].split(';')]
@@ -33,7 +33,7 @@ def create_player_features(game):
     w_bal, w_win, w_los = np.abs(w_pre) < 100, w_pre >  300, w_pre < -300 # eval > 0 = winning for white
     b_bal, b_win, b_los = np.abs(b_pre) < 100, b_pre < -300, b_pre >  300 # eval < 0 = winning for black
  
-    w_end = np.arange(len(white_cpl)) >= 30 # last 30 moves of the game (endgame phase)
+    w_end = np.arange(len(white_cpl)) >= 30 # moves after 30 moves (endgame phase)
     b_end = np.arange(len(black_cpl)) >= 30
 
     return pd.Series({
@@ -77,29 +77,27 @@ def create_player_features(game):
 
 def format_df(games):
     df = pd.read_csv(games).sample(140_000, random_state=42)
-    df['eco_family'] = df['eco'].astype(str).str[0] # group openings by ECO code family
     features_df = df.apply(create_player_features, axis=1)
     df = pd.concat([df, features_df], axis=1)
     df = df.dropna(subset=['w_acpl', 'b_acpl'])
     df[['w_shift_move_time', 'b_shift_move_time']] = \
         df[['w_shift_move_time', 'b_shift_move_time']].fillna(0)
     
-    shared_cols = ['game_id', 'eco', 'eco_family', 'ply_count', 
-                   'eval_volatility', 'category']
-
-    independent_cols =  [
-        'opening_speed', 'n_balanced', 'acpl', 'n_winning', 'avg_move_time', 
-        'n_losing', 'acpl_balanced', 'cpl_p75', 'cpl_median', 'endgame_acpl', 
-        'time_trouble_moves', 'acpl_losing', 'cpl_std', 'best_move_rate', 
-        'shift_move_time', 'acpl_winning'
-    ]
+    shared_cols = ['game_id', 'eco', 'ply_count', 'eval_volatility', 'category']
+    independent_cols =  ['opening_speed', 'n_balanced', 'acpl', 'n_winning', 
+                         'avg_move_time', 'n_losing', 'acpl_balanced', 
+                         'cpl_p75', 'cpl_median', 'endgame_acpl', 
+                         'time_trouble_moves', 'acpl_losing', 'cpl_std', 
+                         'best_move_rate', 'shift_move_time', 'acpl_winning']
 
     white_cols = ['white_elo'] + [f'w_{c}' for c in independent_cols]
     white_df = df[shared_cols + white_cols].copy()
+    white_df['is_white'] = 1
     white_df.columns = white_df.columns.str.replace('w_', '').str.replace('white_', '')
  
     black_cols = ['black_elo'] + [f'b_{c}' for c in independent_cols]
     black_df = df[shared_cols + black_cols].copy()
+    black_df['is_white'] = 0
     black_df.columns = black_df.columns.str.replace('b_', '').str.replace('black_', '')
 
     features_df = pd.concat([white_df, black_df], ignore_index=True)
