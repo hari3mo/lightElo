@@ -24,28 +24,26 @@ def create_player_features(game):
     w_time_spent = time_spent[0::2]
     b_time_spent = time_spent[1::2]
 
-    w_shift_time = w_time_spent[np.abs(diffs[0::2]) > 100] # time spent on moves with significant change in centipawns 
-    b_shift_time = b_time_spent[np.abs(diffs[1::2]) > 100]
-
     previous = centipawns[:-1]
     w_pre, b_pre = previous[0::2], previous[1::2]
  
     w_bal, w_win, w_los = np.abs(w_pre) < 100, w_pre >  300, w_pre < -300 # eval > 0 = winning for white
     b_bal, b_win, b_los = np.abs(b_pre) < 100, b_pre < -300, b_pre >  300 # eval < 0 = winning for black
  
-    w_lo = clocks[:-2][0::2] < start_time * 0.2 # clock < 20% of base time
-    b_lo = clocks[:-2][1::2] < start_time * 0.2
- 
-    w_end = np.arange(len(white_cpl)) >= 30 # last 30 moves of the game (endgame phase)
+    w_end = np.arange(len(white_cpl)) >= 30 # moves past move 30 (endgame phase)
     b_end = np.arange(len(black_cpl)) >= 30
 
     return pd.Series({
         # Centipawn features
-        'w_acpl': np.mean(white_cpl), # average centipawn loss
+        'w_acpl': np.mean(white_cpl), # average centipawn loss (how bad moves were on average)
         'b_acpl': np.mean(black_cpl),
-        'eval_volatility': np.std(centipawns), # standard deviation of centipawns (quantifies how much the position fluctuated during the game)
-        'w_best_move_rate': np.mean(white_cpl <= 5), # percentage of moves that were best move (cpl <= 5)
-        'b_best_move_rate': np.mean(black_cpl <= 5),
+        'w_cpl_median': np.median(white_cpl), # median centipawn loss (how bad a typical move was)
+        'b_cpl_median': np.median(black_cpl),
+        'w_cpl_p75': np.percentile(white_cpl, 75), # 75th percentile of centipawn loss (how bad the worst moves were)
+        'b_cpl_p75': np.percentile(black_cpl, 75),
+        'w_cpl_std': np.std(white_cpl), # standard deviation of centipawn loss (volatility of player's performance)
+        'b_cpl_std': np.std(black_cpl),
+        'eval_volatility': np.std(centipawns), # standard deviation of evals (overall volatility of the game)
         'w_acpl_balanced': np.mean(white_cpl[w_bal]), # average cpl on moves where player is in a balanced position (|eval| < 100)
         'w_acpl_winning':  np.mean(white_cpl[w_win]),
         'w_acpl_losing':   np.mean(white_cpl[w_los]),
@@ -58,62 +56,34 @@ def create_player_features(game):
         'b_n_balanced': int(b_bal.sum()),
         'b_n_winning':  int(b_win.sum()),
         'b_n_losing':   int(b_los.sum()),
-        'w_blunders': np.sum(white_cpl > 300), # 50 cpl < inacuraccies <= 100 cpl < mistakes <= 300 cpl < blunders 
-        'b_blunders': np.sum(black_cpl > 300),
-        'w_mistakes': np.sum((white_cpl > 100) & (white_cpl <= 300)),
-        'b_mistakes': np.sum((black_cpl > 100) & (black_cpl <= 300)),
-        'w_inaccuracies': np.sum((white_cpl > 50) & (white_cpl <= 100)),
-        'b_inaccuracies': np.sum((black_cpl > 50) & (black_cpl <= 100)),
-        'w_endgame_acpl':     np.mean(white_cpl[w_end]), # average cpl in endgame phase
-        'b_endgame_acpl':     np.mean(black_cpl[b_end]),
-        'w_endgame_blunders': int(np.sum(white_cpl[w_end] > 300)), # number of blunders in endgame phase
-        'b_endgame_blunders': int(np.sum(black_cpl[b_end] > 300)),
-        'reached_endgame':    int(game['ply_count'] > 60), # binary flag whether game reached endgame phase
+        'w_endgame_acpl': np.mean(white_cpl[w_end]), # average cpl in endgame phase
+        'b_endgame_acpl': np.mean(black_cpl[b_end]),
 
         # Temporal features
-        'w_acpl_low_time': np.mean(white_cpl[w_lo]), # average cpl on moves where player had low time remaining
-        'b_acpl_low_time': np.mean(black_cpl[b_lo]),
-        'w_n_low_time': int(w_lo.sum()), # number of moves where player had low time remaining
-        'b_n_low_time': int(b_lo.sum()),
         'w_avg_move_time': np.mean(w_time_spent),
         'b_avg_move_time': np.mean(b_time_spent),
         'w_time_trouble_moves': np.sum(clocks[0::2] < start_time * 0.1), # number of moves where player had less than 10% time left
         'b_time_trouble_moves': np.sum(clocks[1::2] < start_time * 0.1),
         'w_opening_speed': np.mean(w_time_spent[:5]), # average time spent on first 5 moves (opening phase of the game)
-        'b_opening_speed': np.mean(b_time_spent[:5]),
-        'w_shift_move_time': np.mean(w_shift_time) if len(w_shift_time) > 0 else 0, # average time spent on moves with significant change in centipawns
-        'b_shift_move_time': np.mean(b_shift_time) if len(b_shift_time) > 0 else 0
-    })
+        'b_opening_speed': np.mean(b_time_spent[:5])})
 
 def format_df(games):
     df = pd.read_csv(games).sample(140_000, random_state=42)
     features_df = df.apply(create_player_features, axis=1)
     df = pd.concat([df, features_df], axis=1)
     df = df.dropna(subset=['w_acpl', 'b_acpl'])
-    df[['w_shift_move_time', 'b_shift_move_time']] = \
-        df[['w_shift_move_time', 'b_shift_move_time']].fillna(0)
     
-    shared_cols = ['game_id', 'eco', 'ply_count', 'eval_volatility', 
-                   'category', 'reached_endgame']
-
-    independent_cols =  [
-        'acpl', 'blunders', 'mistakes', 'inaccuracies',
-        'avg_move_time', 'time_trouble_moves', 'opening_speed', 'shift_move_time',
-        'best_move_rate',
-        'acpl_balanced', 'acpl_winning', 'acpl_losing',
-        'n_balanced', 'n_winning', 'n_losing',
-        'acpl_low_time', 'n_low_time',
-        'endgame_acpl', 'endgame_blunders',
-    ]
+    shared_cols = ['game_id', 'eco', 'ply_count', 'eval_volatility', 'category']
+    independent_cols =  ['acpl', 'cpl_median', 'cpl_p75', 'cpl_std', 'avg_move_time', 
+        'time_trouble_moves', 'opening_speed','acpl_balanced', 'acpl_winning', 
+        'acpl_losing', 'n_balanced', 'n_winning', 'n_losing', 'endgame_acpl']
 
     white_cols = ['white_elo'] + [f'w_{c}' for c in independent_cols]
     white_df = df[shared_cols + white_cols].copy()
-    white_df['is_white'] = 1
     white_df.columns = white_df.columns.str.replace('w_', '').str.replace('white_', '')
  
     black_cols = ['black_elo'] + [f'b_{c}' for c in independent_cols]
     black_df = df[shared_cols + black_cols].copy()
-    black_df['is_white'] = 0
     black_df.columns = black_df.columns.str.replace('b_', '').str.replace('black_', '')
 
     features_df = pd.concat([white_df, black_df], ignore_index=True)
@@ -124,8 +94,7 @@ def format_df(games):
 
 def main():
     if not os.path.exists(OUTPUT_PATH):
-        features = format_df(GAMES_CSV_PATH)
-        features.to_csv(OUTPUT_PATH, index=False)
+        format_df(GAMES_CSV_PATH).to_csv(OUTPUT_PATH, index=False)
     else:
         print(f'{OUTPUT_PATH} already exists.')
 
