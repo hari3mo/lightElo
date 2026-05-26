@@ -3,7 +3,7 @@ import pandas as pd
 import lightgbm
 
 FEATURES_PATH = 'data/lichess_features.csv' # output from create_features.py
-OUTPUT_PATH = 'models/lightgbm.txt' # export trained model
+OUTPUT_PATH = 'models/lightgbm.sav' # export trained model
 
 def main():
     df = pd.read_csv(FEATURES_PATH)
@@ -19,7 +19,7 @@ def main():
     games = df['game_id'].drop_duplicates().values
     n = len(games)
     tr = set(games[:int(n*0.8)]) 
-    va = set(games[int(n*0.8):]) 
+    va = set(games[int(n*0.8):int(n*0.9)]) 
     te = set(games[int(n*0.9):]) 
 
     train_df = df[df['game_id'].isin(tr)]
