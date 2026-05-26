@@ -15,7 +15,6 @@ def create_player_features(game):
     clocks = np.array(2 * [start_time] + clocks) # add initial clock times for both players
     time_spent = (clocks[:-2] - clocks[2:]) + increment # turn time = clock time before move - clock time after move (+increment)
 
-    # In create_features, replace the clipping line
     centipawns = [0] + [1000 if eval > 10 else -1000 if eval < -10 
                   else eval * 100 for eval in evals] # unit measuring how strong a position/move is; more positive = better for white/more negative = better for black
     diffs = np.diff(centipawns) # calculate change in centipawns after each turn (quantifies how good/bad a move was)
@@ -36,7 +35,7 @@ def create_player_features(game):
         'eval_volatility': np.std(centipawns), # standard deviation of centipawns (quantifies how much the position fluctuated during the game)
         
         # Error features
-        'w_blunders': np.sum(white_cpl > 300), # inacuraccies <= 100 cpl < mistakes <= 300 cpl < blunders 
+        'w_blunders': np.sum(white_cpl > 300), # 50 cpl < inacuraccies <= 100 cpl < mistakes <= 300 cpl < blunders 
         'b_blunders': np.sum(black_cpl > 300),
         'w_mistakes': np.sum((white_cpl > 100) & (white_cpl <= 300)),
         'b_mistakes': np.sum((black_cpl > 100) & (black_cpl <= 300)),
