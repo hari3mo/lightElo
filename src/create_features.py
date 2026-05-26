@@ -93,22 +93,27 @@ def format_df(games):
     df[['w_shift_move_time', 'b_shift_move_time']] = \
         df[['w_shift_move_time', 'b_shift_move_time']].fillna(0)
     
-    shared_cols = ['game_id', 'eco', 'ply_count', 'eval_volatility', 'category']
+    shared_cols = ['game_id', 'eco', 'ply_count', 'eval_volatility', 
+                   'category', 'reached_endgame']
 
-    white_cols = [
-        'white_elo', 'w_acpl', 'w_blunders', 'w_mistakes', 'w_inaccuracies', 
-        'w_avg_move_time', 'w_time_trouble_moves', 'w_opening_speed', 'w_shift_move_time'
+    independent_cols =  [
+        'acpl', 'blunders', 'mistakes', 'inaccuracies',
+        'avg_move_time', 'time_trouble_moves', 'opening_speed', 'shift_move_time',
+        'best_move_rate',
+        'acpl_balanced', 'acpl_winning', 'acpl_losing',
+        'n_balanced', 'n_winning', 'n_losing',
+        'acpl_low_time', 'n_low_time',
+        'endgame_acpl', 'endgame_blunders',
     ]
+
+    white_cols = ['white_elo'] + [f'w_{c}' for c in independent_cols]
     white_df = df[shared_cols + white_cols].copy()
-    white_df['is_white'] = 1 
+    white_df['is_white'] = 1
     white_df.columns = white_df.columns.str.replace('w_', '').str.replace('white_', '')
-
-    black_cols = [
-        'black_elo', 'b_acpl', 'b_blunders', 'b_mistakes', 'b_inaccuracies', 
-        'b_avg_move_time', 'b_time_trouble_moves', 'b_opening_speed', 'b_shift_move_time'
-    ]
+ 
+    black_cols = ['black_elo'] + [f'b_{c}' for c in independent_cols]
     black_df = df[shared_cols + black_cols].copy()
-    black_df['is_white'] = 0 
+    black_df['is_white'] = 0
     black_df.columns = black_df.columns.str.replace('b_', '').str.replace('black_', '')
 
     features_df = pd.concat([white_df, black_df], ignore_index=True)
