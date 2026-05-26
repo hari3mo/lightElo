@@ -9,7 +9,7 @@ import os
 PGN_PATH = 'data/lichess_db_standard_rated_2026-01.pgn.zst' # archive of raw PGN files downloaded from https://database.lichess.org/ (January 2026)
 OUTPUT_PATH = 'data/lichess_games.csv'
 
-ELO_RANGES = [ # ensure sample is balanced across different ELO brackets
+ELO_RANGES = [ # track ELO distribution of extracted games
     ('800-', 0, 800),
     ('[800, 1100)', 800, 1100),
     ('[1100, 1400)', 1100, 1400),
