@@ -14,13 +14,13 @@ def train(df):
     for col in cat_cols:
         df[col] = df[col].astype('category')
 
-    # Split data on unique game IDs to avoid leakage between training and validation/test sets
     games = df['game_id'].drop_duplicates().values
     n = len(games)
     tr = set(games[:int(n*0.8)]) 
     va = set(games[int(n*0.8):int(n*0.9)]) 
     te = set(games[int(n*0.9):]) 
-
+    
+    # Split data on unique game IDs to avoid leakage between training and validation/test sets
     train_df = df[df['game_id'].isin(tr)]
     val_df = df[df['game_id'].isin(va)]
     test_df = df[df['game_id'].isin(te)]
@@ -37,8 +37,7 @@ def train(df):
     train_set=tr_set,
     num_boost_round=2000,
     valid_sets=[va_set],
-    callbacks=[lightgbm.early_stopping(100)]
-    )
+    callbacks=[lightgbm.early_stopping(100)])
 
     preds = model.predict(X_te)
     mae = mean_absolute_error(y_te, preds)
