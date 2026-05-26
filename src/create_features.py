@@ -14,24 +14,44 @@ def create_player_features(game):
     clocks = np.array(2 * [start_time] + clocks) # add initial clock times for both players
     time_spent = (clocks[:-2] - clocks[2:]) + increment # turn time = clock time before move - clock time after move (+increment)
 
-    centipawns = [0] + [1000 if eval > 10 else -1000 if eval < -10 
-                  else eval * 100 for eval in evals] # unit measuring how strong a position/move is; more positive = better for white/more negative = better for black
+    centipawns = np.array([0] + [1000 if eval > 10 else -1000 if eval < -10 
+                  else eval * 100 for eval in evals]) # unit measuring how strong a position/move is; more positive = better for white/more negative = better for black
     diffs = np.diff(centipawns) # calculate change in centipawns after each turn (quantifies how good/bad a move was)
 
     white_cpl = np.maximum(0, -diffs[0::2]) # centipawn loss (positive values represent more loss)
     black_cpl = np.maximum(0, diffs[1::2])  
 
-    white_time_spent = time_spent[0::2]
-    black_time_spent = time_spent[1::2]
+    w_time_spent = time_spent[0::2]
+    b_time_spent = time_spent[1::2]
 
-    white_shift_time = white_time_spent[np.abs(diffs[0::2]) > 100] # time spent on moves with significant change in centipawns 
-    black_shift_time = black_time_spent[np.abs(diffs[1::2]) > 100]
+    w_shift_time = w_time_spent[np.abs(diffs[0::2]) > 100] # time spent on moves with significant change in centipawns 
+    b_shift_time = b_time_spent[np.abs(diffs[1::2]) > 100]
+
+    previous = centipawns[:-1]
+    w_pre, b_pre = previous[0::2], previous[1::2]
+ 
+    w_bal, w_win, w_los = np.abs(w_pre) < 100, w_pre >  300, w_pre < -300 # eval > 0 = winning for white
+    b_bal, b_win, b_los = np.abs(b_pre) < 100, b_pre < -300, b_pre >  300 # eval < 0 = winning for black
+ 
+    w_lo = clocks[:-2][0::2] < start_time * 0.2 # clock < 20% of base time
+    b_lo = clocks[:-2][1::2] < start_time * 0.2
+ 
+    w_end = np.arange(len(white_cpl)) >= 30 # last 30 moves of the game (endgame phase)
+    b_end = np.arange(len(black_cpl)) >= 30
 
     return pd.Series({
         # Centipawn features
         'w_acpl': np.mean(white_cpl), # average centipawn loss
         'b_acpl': np.mean(black_cpl),
         'eval_volatility': np.std(centipawns), # standard deviation of centipawns (quantifies how much the position fluctuated during the game)
+        'w_best_move_rate': np.mean(white_cpl <= 5), # percentage of moves that were best move (cpl <= 5)
+        'b_best_move_rate': np.mean(black_cpl <= 5),
+        'w_acpl_balanced': np.mean(white_cpl[w_bal]), # average cpl on moves where player is in a balanced position (|eval| < 100)
+        'w_acpl_winning':  np.mean(white_cpl[w_win]), # average cpl on moves where player is in a winning position (eval > 300 for white)
+        'w_acpl_losing':   np.mean(white_cpl[w_los]), # average cpl on moves where player is in a losing position (eval < -300 for white)
+        'b_acpl_balanced': np.mean(black_cpl[b_bal]),
+        'b_acpl_winning':  np.mean(black_cpl[b_win]),
+        'b_acpl_losing':   np.mean(black_cpl[b_los]),
         
         # Error features
         'w_blunders': np.sum(white_cpl > 300), # 50 cpl < inacuraccies <= 100 cpl < mistakes <= 300 cpl < blunders 
@@ -42,14 +62,14 @@ def create_player_features(game):
         'b_inaccuracies': np.sum((black_cpl > 50) & (black_cpl <= 100)),
 
         # Temporal features
-        'w_avg_move_time': np.mean(white_time_spent),
-        'b_avg_move_time': np.mean(black_time_spent),
+        'w_avg_move_time': np.mean(w_time_spent),
+        'b_avg_move_time': np.mean(b_time_spent),
         'w_time_trouble_moves': np.sum(clocks[0::2] < start_time * 0.1), # number of moves where player had less than 10% time left
         'b_time_trouble_moves': np.sum(clocks[1::2] < start_time * 0.1),
-        'w_opening_speed': np.mean(white_time_spent[:5]), # average time spent on first 5 moves (opening phase of the game)
-        'b_opening_speed': np.mean(black_time_spent[:5]),
-        'w_shift_move_time': np.mean(white_shift_time) if len(white_shift_time) > 0 else 0, # average time spent on moves with significant change in centipawns
-        'b_shift_move_time': np.mean(black_shift_time) if len(black_shift_time) > 0 else 0
+        'w_opening_speed': np.mean(w_time_spent[:5]), # average time spent on first 5 moves (opening phase of the game)
+        'b_opening_speed': np.mean(b_time_spent[:5]),
+        'w_shift_move_time': np.mean(w_shift_time) if len(w_shift_time) > 0 else 0, # average time spent on moves with significant change in centipawns
+        'b_shift_move_time': np.mean(b_shift_time) if len(b_shift_time) > 0 else 0
     })
 
 def format_df(games):
@@ -89,7 +109,6 @@ def main():
         features = format_df(GAMES_CSV_PATH)
         features.to_csv(OUTPUT_PATH, index=False)
     else:
-        features = pd.read_csv(OUTPUT_PATH)
         print(f'{OUTPUT_PATH} already exists.')
 
 if __name__ == "__main__":
