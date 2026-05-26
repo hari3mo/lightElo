@@ -1,8 +1,7 @@
 from src import extract_games
 from src import create_features
+from src import train_model
 import time
-
-import train
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -21,7 +20,7 @@ if __name__ == "__main__":
     # Step 3: Model training
     print('Training models...')
     train_start = time.time()
-    train.main()
+    train_model.main()
     train_end = time.time()
     print(f'Model training completed in {int(train_end - train_start)} seconds.')
     # Step 4: Model evaluation

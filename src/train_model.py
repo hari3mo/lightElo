@@ -5,8 +5,7 @@ import lightgbm
 FEATURES_PATH = 'data/lichess_features.csv' # output from create_features.py
 OUTPUT_PATH = 'models/lightgbm.sav' # export trained model
 
-def main():
-    df = pd.read_csv(FEATURES_PATH)
+def train(df):
     cat_cols = ['eco', 'category', 'is_white']
     num_cols = ['acpl', 'blunders', 'mistakes', 'inaccuracies', 'avg_move_time',
                 'time_trouble_moves', 'opening_speed', 'shift_move_time',
@@ -39,13 +38,17 @@ def main():
     num_boost_round=2000,
     valid_sets=[va_set],
     callbacks=[lightgbm.early_stopping(100)]
-)
+    )
 
     preds = model.predict(X_te)
     mae = mean_absolute_error(y_te, preds)
     print(f'Test MAE: {mae}')
 
     model.save_model(OUTPUT_PATH)
+
+def main():
+    df = pd.read_csv(FEATURES_PATH)
+    train(df)
 
 if __name__ == "__main__":
     main()
