@@ -4,18 +4,19 @@ import pandas as pd
 import os
 
 FEATURES_PATH = 'data/lichess_features.csv' # output from create_features.py
-OUTPUT_PATH = 'models/catboost.sav' # trained model will be saved here 
+OUTPUT_PATH = 'models/catboost.sav' # export trained model
 
 def train(df):
     cat_cols = ['eco', 'category', 'eco_family']
     num_cols = ['opening_speed', 'n_balanced', 'acpl', 'eval_volatility', 
                 'ply_count', 'n_winning', 'avg_move_time', 'n_losing',
                 'acpl_balanced', 'cpl_p75', 'cpl_median', 'endgame_acpl',
-                'time_trouble_moves', 'acpl_losing', 'cpl_std', 'best_move_rate',
-                'shift_move_time','acpl_winning']
+                'time_trouble_moves', 'acpl_losing', 'cpl_std', 
+                'best_move_rate', 'shift_move_time','acpl_winning']
+    
     features = num_cols + cat_cols
     for col in cat_cols:
-        df[col] = df[col].astype(str)
+        df[col] = df[col].astype('category')
 
     games = df['game_id'].drop_duplicates().values
     n = len(games)
@@ -33,17 +34,15 @@ def train(df):
     X_te, y_te = test_df[features], test_df['elo']
 
     # Train CatBoost model
+    best_params = pd.read_csv('models/params/catboost.csv').iloc[0].to_dict() # load best hyperparameters from tuning
     train_pool = Pool(X_tr, y_tr, cat_features=cat_cols)
     val_pool = Pool(X_va, y_va, cat_features=cat_cols)
-    model = CatBoostRegressor(iterations=2000,
+    model = CatBoostRegressor(iterations=3000,
                               eval_metric='MAE',
                               random_seed=42,
-                              early_stopping_rounds=100)
+                              early_stopping_rounds=100,
+                              **best_params)
     model.fit(train_pool,eval_set=val_pool, verbose=100)
-
-    preds = model.predict(X_te)
-    mae = mean_absolute_error(y_te, preds)
-    print(f'Test MAE: {mae}')
     
     feature_imp = pd.DataFrame({'feature': model.feature_names_, 
                                 'importance': model.get_feature_importance()})

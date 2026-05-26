@@ -1,0 +1,2 @@
+learning_rate,depth,l2_leaf_reg,random_strength,bagging_temperature,min_data_in_leaf,grow_policy
+0.09145097821561869,9,0.005963474303079283,0.009103092446205047,0.4013154967887995,45,SymmetricTree
