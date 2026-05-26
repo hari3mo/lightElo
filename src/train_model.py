@@ -33,7 +33,7 @@ def train(df):
     tr_set = lightgbm.Dataset(X_tr, y_tr, categorical_feature=cat_cols)
     va_set = lightgbm.Dataset(X_va, y_va, categorical_feature=cat_cols, reference=tr_set)
     model = lightgbm.train(
-    {'objective': 'regression', 'metric': 'mae', 'seed': 42, 'verbose': -1},
+    {'objective': 'regression', 'metric': 'mae', 'seed': 42}, # MAE for intrepretability
     train_set=tr_set,
     num_boost_round=2000,
     valid_sets=[va_set],
