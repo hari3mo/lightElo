@@ -1,9 +1,10 @@
 from sklearn.metrics import mean_absolute_error
 import pandas as pd
 import lightgbm
+import os
 
 FEATURES_PATH = 'data/lichess_features.csv' # output from create_features.py
-OUTPUT_PATH = 'models/lightgbm.sav' # export trained model
+OUTPUT_PATH = 'models/lightgbm.sav' # trained model will be saved here 
 
 def train(df):
     cat_cols = ['eco', 'category']
@@ -47,8 +48,11 @@ def train(df):
     model.save_model(OUTPUT_PATH)
 
 def main():
-    df = pd.read_csv(FEATURES_PATH)
-    train(df)
+    if not os.path.exists(OUTPUT_PATH):
+        df = pd.read_csv(FEATURES_PATH)
+        train(df)
+    else:
+        print(f'{OUTPUT_PATH} already exists.')
 
 if __name__ == "__main__":
     main()
