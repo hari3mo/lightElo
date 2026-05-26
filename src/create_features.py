@@ -77,13 +77,15 @@ def create_player_features(game):
 
 def format_df(games):
     df = pd.read_csv(games).sample(140_000, random_state=42)
+    df['eco_family'] = df['eco'].astype(str).str[0] # group openings by ECO code family
     features_df = df.apply(create_player_features, axis=1)
     df = pd.concat([df, features_df], axis=1)
     df = df.dropna(subset=['w_acpl', 'b_acpl'])
     df[['w_shift_move_time', 'b_shift_move_time']] = \
         df[['w_shift_move_time', 'b_shift_move_time']].fillna(0)
     
-    shared_cols = ['game_id', 'eco', 'ply_count', 'eval_volatility', 'category']
+    shared_cols = ['game_id', 'eco', 'eco_family', 'ply_count', 
+                   'eval_volatility', 'category']
 
     independent_cols =  [
         'opening_speed', 'n_balanced', 'acpl', 'n_winning', 'avg_move_time', 

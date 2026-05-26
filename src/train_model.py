@@ -7,7 +7,7 @@ FEATURES_PATH = 'data/lichess_features.csv' # output from create_features.py
 OUTPUT_PATH = 'models/catboost.sav' # trained model will be saved here 
 
 def train(df):
-    cat_cols = ['eco', 'category']
+    cat_cols = ['eco', 'category', 'eco_family']
     num_cols = ['opening_speed', 'n_balanced', 'acpl', 'eval_volatility', 
                 'ply_count', 'n_winning', 'avg_move_time', 'n_losing',
                 'acpl_balanced', 'cpl_p75', 'cpl_median', 'endgame_acpl',
@@ -21,7 +21,7 @@ def train(df):
     n = len(games)
     tr = set(games[:int(n*0.8)]) 
     va = set(games[int(n*0.8):int(n*0.9)]) 
-    te = set(games[int(n*0.9):]) 
+    te = set(games[int(n*0.9):])
     
     # Split data on unique game IDs to avoid leakage between training and validation/test sets
     train_df = df[df['game_id'].isin(tr)]
