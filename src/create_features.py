@@ -47,21 +47,34 @@ def create_player_features(game):
         'w_best_move_rate': np.mean(white_cpl <= 5), # percentage of moves that were best move (cpl <= 5)
         'b_best_move_rate': np.mean(black_cpl <= 5),
         'w_acpl_balanced': np.mean(white_cpl[w_bal]), # average cpl on moves where player is in a balanced position (|eval| < 100)
-        'w_acpl_winning':  np.mean(white_cpl[w_win]), # average cpl on moves where player is in a winning position (eval > 300 for white)
-        'w_acpl_losing':   np.mean(white_cpl[w_los]), # average cpl on moves where player is in a losing position (eval < -300 for white)
+        'w_acpl_winning':  np.mean(white_cpl[w_win]),
+        'w_acpl_losing':   np.mean(white_cpl[w_los]),
         'b_acpl_balanced': np.mean(black_cpl[b_bal]),
         'b_acpl_winning':  np.mean(black_cpl[b_win]),
         'b_acpl_losing':   np.mean(black_cpl[b_los]),
-        
-        # Error features
+        'w_n_balanced': int(w_bal.sum()), # number of moves where player is in a balanced position
+        'w_n_winning':  int(w_win.sum()), 
+        'w_n_losing':   int(w_los.sum()),
+        'b_n_balanced': int(b_bal.sum()),
+        'b_n_winning':  int(b_win.sum()),
+        'b_n_losing':   int(b_los.sum()),
         'w_blunders': np.sum(white_cpl > 300), # 50 cpl < inacuraccies <= 100 cpl < mistakes <= 300 cpl < blunders 
         'b_blunders': np.sum(black_cpl > 300),
         'w_mistakes': np.sum((white_cpl > 100) & (white_cpl <= 300)),
         'b_mistakes': np.sum((black_cpl > 100) & (black_cpl <= 300)),
         'w_inaccuracies': np.sum((white_cpl > 50) & (white_cpl <= 100)),
         'b_inaccuracies': np.sum((black_cpl > 50) & (black_cpl <= 100)),
+        'w_endgame_acpl':     np.mean(white_cpl[w_end]), # average cpl in endgame phase
+        'b_endgame_acpl':     np.mean(black_cpl[b_end]),
+        'w_endgame_blunders': int(np.sum(white_cpl[w_end] > 300)), # number of blunders in endgame phase
+        'b_endgame_blunders': int(np.sum(black_cpl[b_end] > 300)),
+        'reached_endgame':    int(game['ply_count'] > 60), # binary flag whether game reached endgame phase
 
         # Temporal features
+        'w_acpl_low_time': np.mean(white_cpl[w_lo]), # average cpl on moves where player had low time remaining
+        'b_acpl_low_time': np.mean(black_cpl[b_lo]),
+        'w_n_low_time': int(w_lo.sum()), # number of moves where player had low time remaining
+        'b_n_low_time': int(b_lo.sum()),
         'w_avg_move_time': np.mean(w_time_spent),
         'b_avg_move_time': np.mean(b_time_spent),
         'w_time_trouble_moves': np.sum(clocks[0::2] < start_time * 0.1), # number of moves where player had less than 10% time left
