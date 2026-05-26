@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 GAMES_CSV_PATH = 'data/lichess_games.csv' # output from extract_games.py
-OUTPUT_PATH = 'data/lichess_features.csv' # output from create_features.py
+OUTPUT_PATH = 'data/lichess_features.csv'
 
 def create_player_features(game):
     evals = [float(x) if x else 0 for x in game['evals'].split(';')]

@@ -130,8 +130,6 @@ def filter_games(games):
         white_range, black_range = get_elo_range(white_elo), get_elo_range(black_elo)
         if white_range is None or black_range is None: # skip games with outside of ELO ranges
             continue
-        if white_range != black_range: # skip games between players in different ELO brackets
-            continue
         if range_counts[white_range] >= TARGET_PER_RANGE: # skip if already extracted 20,000 games in this ELO range
             continue
         time_control_str = headers.get('TimeControl', '')
