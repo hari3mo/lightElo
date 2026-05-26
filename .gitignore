@@ -3,3 +3,4 @@ env/
 data/
 notebooks/
 **/__pycache__/
+catboost_info/

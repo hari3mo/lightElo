@@ -1,20 +1,21 @@
 from sklearn.metrics import mean_absolute_error
+from catboost import CatBoostRegressor, Pool
 import pandas as pd
-import lightgbm
 import os
 
 FEATURES_PATH = 'data/lichess_features.csv' # output from create_features.py
-OUTPUT_PATH = 'models/lightgbm.sav' # trained model will be saved here 
+OUTPUT_PATH = 'models/catboost.sav' # trained model will be saved here 
 
 def train(df):
     cat_cols = ['eco', 'category']
-    num_cols = ['acpl', 'cpl_median', 'cpl_p75', 'cpl_std', 'avg_move_time',
-                'time_trouble_moves', 'opening_speed', 'ply_count', 
-                'eval_volatility', 'acpl_balanced', 'acpl_winning', 
-                'acpl_losing', 'n_balanced', 'n_winning', 'n_losing', 'endgame_acpl']
+    num_cols = ['opening_speed', 'n_balanced', 'acpl', 'eval_volatility', 
+                'ply_count', 'n_winning', 'avg_move_time', 'n_losing',
+                'acpl_balanced', 'cpl_p75', 'cpl_median', 'endgame_acpl',
+                'time_trouble_moves', 'acpl_losing', 'cpl_std', 'best_move_rate',
+                'shift_move_time','acpl_winning']
     features = num_cols + cat_cols
     for col in cat_cols:
-        df[col] = df[col].astype('category')
+        df[col] = df[col].astype(str)
 
     games = df['game_id'].drop_duplicates().values
     n = len(games)
@@ -31,26 +32,28 @@ def train(df):
     X_va, y_va = val_df[features], val_df['elo']
     X_te, y_te = test_df[features], test_df['elo']
 
-    # Train LightGBM model
-    tr_set = lightgbm.Dataset(X_tr, y_tr, categorical_feature=cat_cols)
-    va_set = lightgbm.Dataset(X_va, y_va, categorical_feature=cat_cols, reference=tr_set)
-    model = lightgbm.train(
-    {'objective': 'regression', 'metric': 'mae', 'seed': 42}, # MAE for intrepretability
-    train_set=tr_set,
-    num_boost_round=2000,
-    valid_sets=[va_set],
-    callbacks=[lightgbm.early_stopping(100)])
+    # Train CatBoost model
+    train_pool = Pool(X_tr, y_tr, cat_features=cat_cols)
+    val_pool = Pool(X_va, y_va, cat_features=cat_cols)
+    model = CatBoostRegressor(iterations=2000,
+                              eval_metric='MAE',
+                              random_seed=42,
+                              early_stopping_rounds=100)
+    model.fit(train_pool,eval_set=val_pool, verbose=100)
 
     preds = model.predict(X_te)
     mae = mean_absolute_error(y_te, preds)
     print(f'Test MAE: {mae}')
+    
+    feature_imp = pd.DataFrame({'feature': model.feature_names_, 
+                                'importance': model.get_feature_importance()})
+    print(feature_imp.sort_values('importance', ascending=False).to_string(index=False))
 
     model.save_model(OUTPUT_PATH)
 
 def main():
     if not os.path.exists(OUTPUT_PATH):
-        df = pd.read_csv(FEATURES_PATH)
-        train(df)
+        train(pd.read_csv(FEATURES_PATH))
     else:
         print(f'{OUTPUT_PATH} already exists.')
 
