@@ -6,10 +6,11 @@ FEATURES_PATH = 'data/lichess_features.csv' # output from create_features.py
 OUTPUT_PATH = 'models/lightgbm.sav' # export trained model
 
 def train(df):
-    cat_cols = ['eco', 'category', 'is_white']
-    num_cols = ['acpl', 'blunders', 'mistakes', 'inaccuracies', 'avg_move_time',
-                'time_trouble_moves', 'opening_speed', 'shift_move_time',
-                'ply_count', 'eval_volatility']
+    cat_cols = ['eco', 'category']
+    num_cols = ['acpl', 'cpl_median', 'cpl_p75', 'cpl_std', 'avg_move_time',
+                'time_trouble_moves', 'opening_speed', 'ply_count', 
+                'eval_volatility', 'acpl_balanced', 'acpl_winning', 
+                'acpl_losing', 'n_balanced', 'n_winning', 'n_losing', 'endgame_acpl']
     features = num_cols + cat_cols
     for col in cat_cols:
         df[col] = df[col].astype('category')
