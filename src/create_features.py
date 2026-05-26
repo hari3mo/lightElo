@@ -1,4 +1,3 @@
-from openai import evals
 import pandas as pd
 import numpy as np
 import os
