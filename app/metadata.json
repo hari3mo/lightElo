@@ -1,0 +1,6 @@
+{
+  "name": "Grandmaster Chess",
+  "description": "A beautifully designed, premium Chess client featuring pass-and-play local matches, chess drills, and an intelligent in-browser Minimax AI engine with real-time positional statistics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

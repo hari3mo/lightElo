@@ -4,6 +4,6 @@ data/
 notebooks/
 **/__pycache__/
 catboost_info/
-node_modules/
+app/node_modules/
 dist/
 app/dist/
