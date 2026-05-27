@@ -1,10 +1,9 @@
+catboost==1.2.8
 chess==1.11.2
 fastapi==0.115.6
 joblib==1.5.3
-lightgbm==4.6.0
 numpy==2.4.4
 pandas==3.0.3
-python-chess==1.999
 python-dateutil==2.9.0.post0
 scikit-learn==1.8.0
 scipy==1.17.1

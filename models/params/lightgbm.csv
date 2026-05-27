@@ -1,2 +1,0 @@
-learning_rate,num_leaves,max_depth,min_child_samples,feature_fraction,bagging_fraction,bagging_freq,lambda_l1,lambda_l2
-0.032764853218425385,135,12,46,0.8892231164231703,0.9622504744460266,3,1.6240151773535687,3.453977852540584e-08
